@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: test
+    ports:
+      - "5445:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs
+      - EDGE_PORT=4566
+
+#  temporal-ui:
+#    image: "temporalio/ui:latest"
+#    container_name: temporal-ui
+#    environment:
+#      - TEMPORAL_UI_GRPC_ENDPOINT=temporal:7233
+#    ports:
+#      - "8088:8088"
+#    depends_on:
+#      - temporal
+#
+#  temporal:
+#    image: "temporalio/temporal:latest"
+#    container_name: temporal
+#    environment:
+#      - MYSQL_SEEDS=temporal-db
+#      - POSTGRES_PORT=5432
+#      - TEMPORAL_PGSQL_DB=test
+#      - TEMPORAL_PGSQL_USER=postgres
+#      - TEMPORAL_PGSQL_PASSWORD=password
+#      - TEMPORAL_PGSQL_HOST=db
+#      - TEMPORAL_UI_ENABLED=true
+#    ports:
+#      - "7233:7233"
+#    depends_on:
+#      - db
+#
+#  temporal-worker:
+#    image: "temporalio/worker:latest"
+#    container_name: temporal-worker
+#    environment:
+#      - TEMPORAL_HOST=temporal:7233
+#    depends_on:
+#      - temporal
+
+volumes:
+  postgres_data:
