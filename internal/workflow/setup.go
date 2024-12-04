@@ -21,4 +21,8 @@ func SetupActivities(RegisterActivityWithOptions func(a interface{}, options act
 	RegisterActivityWithOptions(activities.NewSaveDelivery(r, logger).SaveDeliveryActivity, activity.RegisterOptions{
 		Name: activities.SaveDeliveryActivityName,
 	})
+
+	RegisterActivityWithOptions(activities.NewNotifyDelivery(logger).NotifyDeliveryActivity, activity.RegisterOptions{
+		Name: activities.NotifyDeliveryActivityName,
+	})
 }

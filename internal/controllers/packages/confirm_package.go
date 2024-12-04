@@ -42,7 +42,7 @@ func (c *ConfirmPackageController) ConfirmPackage(ctx *gin.Context) {
 	if err != nil {
 		c.Logger.Error("Unable to signal workflow", zap.Error(err))
 
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error. Please try again later."})
+		ctx.JSON(http.StatusBadGateway, gin.H{"error": "Unable to confirm package, package is already delivered"})
 		return
 	}
 

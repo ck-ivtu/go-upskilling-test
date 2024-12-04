@@ -44,8 +44,6 @@ func (c *PackageDeliveryWorkflowConfig) PackageDeliveryWorkflow(
 		for {
 			sel.Select(goCtx)
 		}
-
-		// TODO setup timers
 	})
 
 	if err := workflow.SetQueryHandler(ctx, PackageDeliveryStateQuery, func() (PackageDeliveryWorkflowResult, error) {
@@ -60,17 +58,17 @@ func (c *PackageDeliveryWorkflowConfig) PackageDeliveryWorkflow(
 
 	w.WorkflowResult.Status = model.PackageDeliveryConfirmed
 
-	activityOptions := workflow.ActivityOptions{
+	saveDeliveryActivityOptions := workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute,
 		RetryPolicy: &temporal.RetryPolicy{
 			MaximumAttempts: 3,
 		},
 	}
 
-	activityCtx := workflow.WithActivityOptions(ctx, activityOptions)
+	saveDeliveryActivityCtx := workflow.WithActivityOptions(ctx, saveDeliveryActivityOptions)
 
 	err = workflow.ExecuteActivity(
-		activityCtx,
+		saveDeliveryActivityCtx,
 		activities.SaveDeliveryActivityName,
 		&activities.SaveDeliveryInput{
 			ID: workflow.GetInfo(ctx).WorkflowExecution.ID,
@@ -90,7 +88,35 @@ func (c *PackageDeliveryWorkflowConfig) PackageDeliveryWorkflow(
 
 	w.WorkflowResult.Status = model.PackageDeliverySaved
 
-	// TODO trigger webhook activity
+	notifyDeliveryActivityOptions := workflow.ActivityOptions{
+		StartToCloseTimeout: time.Minute,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: 3,
+		},
+	}
+
+	notifyDeliveryActivityCtx := workflow.WithActivityOptions(ctx, notifyDeliveryActivityOptions)
+
+	err = workflow.ExecuteActivity(
+		notifyDeliveryActivityCtx,
+		activities.NotifyDeliveryActivityName,
+		&activities.NotifyDeliveryInput{
+			DeliveryPackage: &model.DeliveryPackage{
+				ID:              workflow.GetInfo(ctx).WorkflowExecution.ID,
+				DeliveryAddress: params.DeliveryPackage.DeliveryAddress,
+				CustomerEmail:   params.DeliveryPackage.CustomerEmail,
+			},
+		},
+	).Get(ctx, nil)
+
+	if err != nil {
+		w.WorkflowResult.Status = model.PackageDeliveryErrored
+		c.Logger.Error("Failed to notify delivery activity", zap.Error(err))
+
+		return w.WorkflowResult, err
+	}
+
+	w.WorkflowResult.Status = model.PackageDeliveryNotified
 
 	return w.WorkflowResult, nil
 }
