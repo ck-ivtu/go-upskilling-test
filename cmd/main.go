@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go-test/internal/controllers"
+	"go-test/internal/events"
+	"go-test/internal/handlers"
 	"go-test/internal/util"
 	"go-test/internal/workflow"
 	"go-test/repository"
@@ -49,6 +51,9 @@ func main() {
 	}
 	defer c.Close()
 
+	producer := events.NewEventProducerConfig(logger).InitEventProducer(handlers.PackageDeliveryQueueName)
+	consumer := events.NewEventConsumerConfig(logger, c, workflow.PackageDeliveryTaskQueueName).InitEventConsumer(handlers.PackageDeliveryQueueName)
+
 	maxConcurrentActivityTaskPollers := 2
 	maxConcurrentWorkflowTaskPollers := 2
 	maxConcurrentActivityExecutionSize := 200
@@ -69,7 +74,7 @@ func main() {
 	workflow.SetupWorkflow(w, repo, logger)
 
 	ginRouter := gin.Default()
-	controllers.InitializeRoutes(logger, c, ginRouter)
+	controllers.InitializeRoutes(logger, c, ginRouter, producer)
 
 	// TODO add config
 	server := &http.Server{
@@ -93,6 +98,10 @@ func main() {
 		}
 	}()
 
+	go func() {
+		consumer.StartConsuming()
+	}()
+
 	ops := map[string]util.Operation{
 		"temporal": func(ctx context.Context) error {
 			w.Stop()
@@ -100,6 +109,10 @@ func main() {
 		},
 		"http-server": func(ctx context.Context) error {
 			return server.Shutdown(ctx)
+		},
+		"event-consumer": func(ctx context.Context) error {
+			consumer.Dispose()
+			return nil
 		},
 	}
 

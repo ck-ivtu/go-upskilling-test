@@ -1,8 +1,10 @@
 package packages
 
 import (
-	"context"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"go-test/internal/events"
 	"go-test/internal/model"
 	"go-test/internal/workflow"
 	"go.temporal.io/sdk/client"
@@ -14,13 +16,19 @@ type CreatePackageController struct {
 	Logger                       *zap.Logger
 	TemporalClient               client.Client
 	PackageDeliveryTaskQueueName string
+	EventProducer                *events.EventProducer
 }
 
-func RegisterCreatePackageController(logger *zap.Logger, temporalClient client.Client) *CreatePackageController {
+func RegisterCreatePackageController(
+	logger *zap.Logger,
+	temporalClient client.Client,
+	eventProducer *events.EventProducer,
+) *CreatePackageController {
 	return &CreatePackageController{
 		Logger:                       logger,
 		TemporalClient:               temporalClient,
 		PackageDeliveryTaskQueueName: workflow.PackageDeliveryTaskQueueName,
+		EventProducer:                eventProducer,
 	}
 }
 
@@ -41,23 +49,27 @@ func (c *CreatePackageController) CreatePackage(ctx *gin.Context) {
 		return
 	}
 
-	wo := client.StartWorkflowOptions{
-		TaskQueue: c.PackageDeliveryTaskQueueName,
+	deliveryTrackingId := uuid.New().String()
+
+	deliveryPackage := &model.DeliveryPackage{
+		ID:              deliveryTrackingId,
+		CustomerEmail:   req.CustomerEmail,
+		DeliveryAddress: req.DeliveryAddress,
 	}
 
-	workflowInput := workflow.PackageDeliveryWorkflowParams{
-		DeliveryPackage: &model.DeliveryPackage{
-			CustomerEmail:   req.CustomerEmail,
-			DeliveryAddress: req.DeliveryAddress,
-		},
-	}
-
-	run, err := c.TemporalClient.ExecuteWorkflow(context.Background(), wo, workflow.PackageDeliveryWorkflowName, workflowInput)
+	event, err := json.Marshal(deliveryPackage)
 	if err != nil {
-		c.Logger.Error("temporal client execute workflow", zap.Error(err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to execute order workflow"})
+		c.Logger.Error("failed to marshal delivery package", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create delivery package, try again"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"Package ID": run.GetID()})
+	err = c.EventProducer.SendEvent(string(event))
+	if err != nil {
+		c.Logger.Error("failed to create delivery package", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create delivery package, try again"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"Package ID": deliveryTrackingId})
 }

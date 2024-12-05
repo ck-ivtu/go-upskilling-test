@@ -16,7 +16,6 @@ type SaveDelivery struct {
 }
 
 type SaveDeliveryInput struct {
-	ID              string
 	DeliveryPackage *model.DeliveryPackage
 }
 
@@ -29,17 +28,13 @@ func (s *SaveDelivery) SaveDeliveryActivity(ctx context.Context, params *SaveDel
 
 	s.Logger.Info("Starting save delivery activity", zap.Int("attempt", attempt))
 
-	pack, err := s.Repo.CreatePackageDelivery(&model.DeliveryPackage{
-		ID:              params.ID,
-		DeliveryAddress: params.DeliveryPackage.DeliveryAddress,
-		CustomerEmail:   params.DeliveryPackage.CustomerEmail,
-	})
+	pack, err := s.Repo.CreatePackageDelivery(params.DeliveryPackage)
 	if err != nil {
-		s.Logger.Error("Failed to save delivery package", zap.Error(err), zap.String("packageId", params.ID))
+		s.Logger.Error("Failed to save delivery package", zap.Error(err), zap.String("packageId", params.DeliveryPackage.ID))
 		return nil, err
 	}
 
-	s.Logger.Info("Successfully saved delivery package", zap.String("packageId", params.ID))
+	s.Logger.Info("Successfully saved delivery package", zap.String("packageId", params.DeliveryPackage.ID))
 
 	return pack, nil
 }

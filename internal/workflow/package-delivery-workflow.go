@@ -71,11 +71,7 @@ func (c *PackageDeliveryWorkflowConfig) PackageDeliveryWorkflow(
 		saveDeliveryActivityCtx,
 		activities.SaveDeliveryActivityName,
 		&activities.SaveDeliveryInput{
-			ID: workflow.GetInfo(ctx).WorkflowExecution.ID,
-			DeliveryPackage: &model.DeliveryPackage{
-				DeliveryAddress: params.DeliveryPackage.DeliveryAddress,
-				CustomerEmail:   params.DeliveryPackage.CustomerEmail,
-			},
+			DeliveryPackage: params.DeliveryPackage,
 		},
 	).Get(ctx, nil)
 
@@ -101,11 +97,7 @@ func (c *PackageDeliveryWorkflowConfig) PackageDeliveryWorkflow(
 		notifyDeliveryActivityCtx,
 		activities.NotifyDeliveryActivityName,
 		&activities.NotifyDeliveryInput{
-			DeliveryPackage: &model.DeliveryPackage{
-				ID:              workflow.GetInfo(ctx).WorkflowExecution.ID,
-				DeliveryAddress: params.DeliveryPackage.DeliveryAddress,
-				CustomerEmail:   params.DeliveryPackage.CustomerEmail,
-			},
+			DeliveryPackage: params.DeliveryPackage,
 		},
 	).Get(ctx, nil)
 
