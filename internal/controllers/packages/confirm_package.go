@@ -4,11 +4,16 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"go-test/internal/model"
+	_ "go-test/internal/model"
 	"go-test/internal/workflow"
 	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
 	"net/http"
 )
+
+type ConfirmPackageResponse struct {
+	Status model.PackageDeliveryState `json:"status"`
+}
 
 type ConfirmPackageController struct {
 	Logger                       *zap.Logger
@@ -24,6 +29,17 @@ func RegisterConfirmPackageController(logger *zap.Logger, temporalClient client.
 	}
 }
 
+// ConfirmPackage godoc
+// @Summary      Confirm package delivery
+// @Description  Confirm the delivery of a package
+// @Tags         packages
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "Package ID"
+// @Success      200 {object} ConfirmPackageResponse "Confirmation status"
+// @Failure      400 {object} model.HttpErrorResponse "Invalid input data"
+// @Failure      502 {object} model.HttpErrorResponse "Unable to confirm package"
+// @Router       /api/v1/packages/{id}/confirm [post]
 func (c *ConfirmPackageController) ConfirmPackage(ctx *gin.Context) {
 	packageId := ctx.Param("id")
 
@@ -46,5 +62,5 @@ func (c *ConfirmPackageController) ConfirmPackage(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"status": "confirmed"})
+	ctx.JSON(http.StatusOK, &ConfirmPackageResponse{Status: model.PackageDeliveryConfirmed})
 }

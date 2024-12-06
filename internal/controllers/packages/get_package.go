@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	_ "go-test/internal/model"
 	"go-test/internal/workflow"
 	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
@@ -22,6 +23,17 @@ func RegisterGetPackageController(logger *zap.Logger, temporalClient client.Clie
 	}
 }
 
+// GetPackage godoc
+// @Summary      Get package details
+// @Description  Get details of a specific package delivery
+// @Tags         packages
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "Package ID"
+// @Success      200 {object} model.DeliveryPackage
+// @Failure      400 {object} model.HttpErrorResponse "Invalid input data"
+// @Failure      404 {object} model.HttpErrorResponse "Package not found"
+// @Router       /api/v1/packages/{id} [get]
 func (c *GetPackageController) GetPackage(ctx *gin.Context) {
 	packageId := ctx.Param("id")
 	if packageId == "" {

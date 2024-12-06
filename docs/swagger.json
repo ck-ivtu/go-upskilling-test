@@ -1,0 +1,223 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "A distributed system for package delivery notifications using Temporal and AWS SQS.",
+        "title": "Logistics Notification API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/api/v1",
+    "paths": {
+        "/api/v1/packages": {
+            "post": {
+                "description": "Create a new package and start the delivery workflow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Create a new delivery package",
+                "parameters": [
+                    {
+                        "description": "Package details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/packages.CreatePackageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Package ID",
+                        "schema": {
+                            "$ref": "#/definitions/packages.CreatePackageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data",
+                        "schema": {
+                            "$ref": "#/definitions/model.HttpErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HttpErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/packages/{id}": {
+            "get": {
+                "description": "Get details of a specific package delivery",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Get package details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Package ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.DeliveryPackage"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data",
+                        "schema": {
+                            "$ref": "#/definitions/model.HttpErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Package not found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HttpErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/packages/{id}/confirm": {
+            "post": {
+                "description": "Confirm the delivery of a package",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Confirm package delivery",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Package ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Confirmation status",
+                        "schema": {
+                            "$ref": "#/definitions/packages.ConfirmPackageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data",
+                        "schema": {
+                            "$ref": "#/definitions/model.HttpErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Unable to confirm package",
+                        "schema": {
+                            "$ref": "#/definitions/model.HttpErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.DeliveryPackage": {
+            "type": "object",
+            "properties": {
+                "customer_email": {
+                    "type": "string"
+                },
+                "delivery_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.HttpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Invalid input data"
+                }
+            }
+        },
+        "model.PackageDeliveryState": {
+            "type": "string",
+            "enum": [
+                "inProgress",
+                "confirmed",
+                "confirmed",
+                "confirmed",
+                "errored"
+            ],
+            "x-enum-varnames": [
+                "PackageDeliveryInProgress",
+                "PackageDeliveryConfirmed",
+                "PackageDeliverySaved",
+                "PackageDeliveryNotified",
+                "PackageDeliveryErrored"
+            ]
+        },
+        "packages.ConfirmPackageResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/model.PackageDeliveryState"
+                }
+            }
+        },
+        "packages.CreatePackageRequest": {
+            "type": "object",
+            "required": [
+                "customer_email",
+                "delivery_address"
+            ],
+            "properties": {
+                "customer_email": {
+                    "type": "string"
+                },
+                "delivery_address": {
+                    "type": "string"
+                }
+            }
+        },
+        "packages.CreatePackageResponse": {
+            "type": "object",
+            "properties": {
+                "packageId": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

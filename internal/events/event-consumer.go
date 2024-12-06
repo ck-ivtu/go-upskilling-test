@@ -84,7 +84,6 @@ func (ec *EventConsumer) StartConsuming() {
 			}
 
 			if len(result.Messages) == 0 {
-				ec.logger.Info("No messages received")
 				continue
 			}
 

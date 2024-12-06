@@ -1,3 +1,8 @@
+// @title           Logistics Notification API
+// @version         1.0
+// @description     A distributed system for package delivery notifications using Temporal and AWS SQS.
+
+// @BasePath  /api/v1
 package main
 
 import (

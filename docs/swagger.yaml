@@ -1,0 +1,150 @@
+basePath: /api/v1
+definitions:
+  model.DeliveryPackage:
+    properties:
+      customer_email:
+        type: string
+      delivery_address:
+        type: string
+      id:
+        type: string
+    type: object
+  model.HttpErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      message:
+        example: Invalid input data
+        type: string
+    type: object
+  model.PackageDeliveryState:
+    enum:
+    - inProgress
+    - confirmed
+    - confirmed
+    - confirmed
+    - errored
+    type: string
+    x-enum-varnames:
+    - PackageDeliveryInProgress
+    - PackageDeliveryConfirmed
+    - PackageDeliverySaved
+    - PackageDeliveryNotified
+    - PackageDeliveryErrored
+  packages.ConfirmPackageResponse:
+    properties:
+      status:
+        $ref: '#/definitions/model.PackageDeliveryState'
+    type: object
+  packages.CreatePackageRequest:
+    properties:
+      customer_email:
+        type: string
+      delivery_address:
+        type: string
+    required:
+    - customer_email
+    - delivery_address
+    type: object
+  packages.CreatePackageResponse:
+    properties:
+      packageId:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: A distributed system for package delivery notifications using Temporal
+    and AWS SQS.
+  title: Logistics Notification API
+  version: "1.0"
+paths:
+  /api/v1/packages:
+    post:
+      consumes:
+      - application/json
+      description: Create a new package and start the delivery workflow
+      parameters:
+      - description: Package details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/packages.CreatePackageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Package ID
+          schema:
+            $ref: '#/definitions/packages.CreatePackageResponse'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/model.HttpErrorResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/model.HttpErrorResponse'
+      summary: Create a new delivery package
+      tags:
+      - packages
+  /api/v1/packages/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of a specific package delivery
+      parameters:
+      - description: Package ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.DeliveryPackage'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/model.HttpErrorResponse'
+        "404":
+          description: Package not found
+          schema:
+            $ref: '#/definitions/model.HttpErrorResponse'
+      summary: Get package details
+      tags:
+      - packages
+  /api/v1/packages/{id}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm the delivery of a package
+      parameters:
+      - description: Package ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Confirmation status
+          schema:
+            $ref: '#/definitions/packages.ConfirmPackageResponse'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/model.HttpErrorResponse'
+        "502":
+          description: Unable to confirm package
+          schema:
+            $ref: '#/definitions/model.HttpErrorResponse'
+      summary: Confirm package delivery
+      tags:
+      - packages
+swagger: "2.0"
